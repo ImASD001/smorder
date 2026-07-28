@@ -20,10 +20,11 @@
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
                 <h1 class="text-3xl font-bold tracking-tight text-slate-900">Souravs Mart Dashboard</h1>
-                <p class="text-slate-500 mt-1">Viewing order items for IDs: 3024, 3025, 3026</p>
+                <p class="text-slate-500 mt-1">Viewing order items for IDs: 3016 to 3026</p>
             </div>
-            <div class="mt-4 md:mt-0 text-sm font-medium bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
-                Total Orders Loaded: <span id="order-count" class="text-blue-600">0</span>
+            <div class="mt-4 md:mt-0 text-sm font-medium bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 flex gap-4">
+                <div>Orders Displayed: <span id="order-count" class="text-blue-600 font-bold">0</span></div>
+                <div class="border-l border-slate-300 pl-4">Total Value: <span id="grand-total" class="text-emerald-600 font-bold">₹0.00</span></div>
             </div>
         </header>
         
@@ -40,8 +41,8 @@
     </div>
 
     <script>
-        // The specific order IDs we want to filter and display
-        const targetOrders = ['3024', '3025', '3026'];
+        // Generating array from 3016 to 3026
+        const targetOrders = Array.from({length: 11}, (_, i) => String(3016 + i));
 
         // Load and parse the CSV file dynamically
         Papa.parse('order_items (1).csv', {
@@ -83,13 +84,18 @@
         // Function to render the HTML for each order
         function renderDashboard(groupedOrders) {
             const dashboard = document.getElementById('dashboard');
+            let grandTotalValue = 0;
             
-            targetOrders.forEach(orderId => {
+            // Render orders sorted numerically
+            const sortedOrderIds = Object.keys(groupedOrders).sort((a, b) => parseInt(a) - parseInt(b));
+
+            sortedOrderIds.forEach(orderId => {
                 const items = groupedOrders[orderId];
                 if (!items || items.length === 0) return; // Skip if order isn't in CSV
 
                 // Calculate total for this specific order
                 const orderTotal = items.reduce((sum, item) => sum + parseFloat(item.sub_total || 0), 0);
+                grandTotalValue += orderTotal;
 
                 // Build the table rows for the order items
                 let rowsHtml = '';
@@ -151,6 +157,9 @@
 
                 dashboard.innerHTML += cardHtml;
             });
+            
+            // Update Grand Total Header
+            document.getElementById('grand-total').textContent = `₹${grandTotalValue.toFixed(2)}`;
         }
     </script>
 </body>
