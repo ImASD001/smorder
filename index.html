@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Souravs Mart | Orders Dashboard</title>
-    <!-- Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PapaParse for reading the CSV file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,14 +15,30 @@
 
     <div class="max-w-6xl mx-auto">
         <!-- Header -->
-        <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
                 <h1 class="text-3xl font-bold tracking-tight text-slate-900">Souravs Mart Dashboard</h1>
                 <p class="text-slate-500 mt-1">Viewing order items for IDs: 3016 to 3026</p>
             </div>
-            <div class="mt-4 md:mt-0 text-sm font-medium bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 flex gap-4">
-                <div>Orders Displayed: <span id="order-count" class="text-blue-600 font-bold">0</span></div>
-                <div class="border-l border-slate-300 pl-4">Total Value: <span id="grand-total" class="text-emerald-600 font-bold">₹0.00</span></div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <!-- Search Bar -->
+                <div class="relative w-full sm:w-64">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="w-4 h-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="Search Order ID..." 
+                           class="bg-white border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 shadow-sm transition-colors"
+                           autocomplete="off">
+                </div>
+
+                <!-- Stats Summary -->
+                <div class="text-sm font-medium bg-white px-4 py-2.5 rounded-lg shadow-sm border border-slate-200 flex items-center gap-4 whitespace-nowrap">
+                    <div>Orders: <span id="order-count" class="text-blue-600 font-bold">0</span></div>
+                    <div class="border-l border-slate-300 pl-4">Total: <span id="grand-total" class="text-emerald-600 font-bold">₹0.00</span></div>
+                </div>
             </div>
         </header>
         
@@ -35,72 +49,183 @@
         </div>
 
         <!-- Dashboard Container -->
-        <div id="dashboard" class="hidden space-y-8">
-            <!-- Order Cards will be injected dynamically here -->
+        <div id="dashboard" class="hidden flex-col gap-8">
+            <div id="orders-container" class="space-y-8">
+                <!-- Order Cards injected dynamically -->
+            </div>
+
+            <!-- Empty State for Search -->
+            <div id="empty-state" class="hidden bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
+                <svg class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-semibold text-slate-900">No orders found</h3>
+                <p class="mt-1 text-sm text-slate-500">We couldn't find any order numbers matching your search.</p>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm">
+                <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-slate-700">
+                            Showing <span id="page-start" class="font-medium">1</span> to <span id="page-end" class="font-medium">3</span> of <span id="page-total" class="font-medium">10</span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button id="btn-prev" onclick="changePage(-1)" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="sr-only">Previous</span>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <span id="page-indicator" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 focus:z-20 focus:outline-offset-0">
+                                Page 1
+                            </span>
+                            <button id="btn-next" onclick="changePage(1)" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="sr-only">Next</span>
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Generating array from 3016 to 3026
-        const targetOrders = Array.from({length: 11}, (_, i) => String(3016 + i));
+        // Data state variables
+        const targetOrdersList = Array.from({length: 11}, (_, i) => String(3016 + i));
+        let allGroupedOrders = {};   // Will hold { "3016": [...items], "3017": [...items] }
+        let currentFilteredIds = []; // Holds the list of IDs currently matching search
+        
+        // Pagination state
+        let currentPage = 1;
+        const ordersPerPage = 3;     // Change this to show more/less orders per page
 
-        // Load and parse the CSV file dynamically
+        // Search Input Listener
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.trim().toLowerCase();
+            const allAvailableIds = Object.keys(allGroupedOrders).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            if (query === '') {
+                currentFilteredIds = [...allAvailableIds];
+            } else {
+                currentFilteredIds = allAvailableIds.filter(id => id.includes(query));
+            }
+            
+            currentPage = 1; // Reset to page 1 on new search
+            renderDashboard();
+        });
+
+        // PapaParse Initialization
         Papa.parse('order_items (1).csv', {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                // Hide loading spinner
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
+                document.getElementById('dashboard').classList.add('flex');
                 
-                const data = results.data;
-                
-                // Filter the dataset for only the targeted orders
-                const filteredData = data.filter(row => targetOrders.includes(String(row.order_id).trim()));
+                // Filter raw data to our 3016-3026 target range
+                const filteredData = results.data.filter(row => targetOrdersList.includes(String(row.order_id).trim()));
 
-                // Group the items by order_id
-                const groupedOrders = {};
+                // Group by order_id
                 filteredData.forEach(item => {
-                    const orderId = item.order_id;
-                    if (!groupedOrders[orderId]) {
-                        groupedOrders[orderId] = [];
+                    const orderId = String(item.order_id).trim();
+                    if (!allGroupedOrders[orderId]) {
+                        allGroupedOrders[orderId] = [];
                     }
-                    groupedOrders[orderId].push(item);
+                    allGroupedOrders[orderId].push(item);
                 });
 
-                document.getElementById('order-count').textContent = Object.keys(groupedOrders).length;
-                renderDashboard(groupedOrders);
+                // Initialize IDs and render
+                currentFilteredIds = Object.keys(allGroupedOrders).sort((a, b) => parseInt(a) - parseInt(b));
+                renderDashboard();
             },
             error: function(err) {
-                const loader = document.getElementById('loading');
-                loader.innerHTML = `<div class="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
-                                      <strong>Error:</strong> Could not load 'order_items (1).csv'. Ensure the file is in the same directory and you are running this on a web server (or Vercel).
-                                    </div>`;
+                document.getElementById('loading').innerHTML = `
+                    <div class="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
+                        <strong>Error:</strong> Could not load 'order_items (1).csv'. Ensure it's deployed correctly.
+                    </div>`;
                 console.error(err);
             }
         });
 
-        // Function to render the HTML for each order
-        function renderDashboard(groupedOrders) {
-            const dashboard = document.getElementById('dashboard');
+        // Pagination Controller
+        function changePage(direction) {
+            const totalPages = Math.ceil(currentFilteredIds.length / ordersPerPage);
+            currentPage += direction;
+            
+            // Bounds checking
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            renderDashboard();
+            // Scroll back to top of dashboard smoothly
+            document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Render Function
+        function renderDashboard() {
+            const container = document.getElementById('orders-container');
+            const emptyState = document.getElementById('empty-state');
+            const paginationBlock = document.getElementById('pagination-controls');
+            
+            container.innerHTML = '';
             let grandTotalValue = 0;
             
-            // Render orders sorted numerically
-            const sortedOrderIds = Object.keys(groupedOrders).sort((a, b) => parseInt(a) - parseInt(b));
+            // Handle Empty State (No search results)
+            if (currentFilteredIds.length === 0) {
+                emptyState.classList.remove('hidden');
+                paginationBlock.classList.add('hidden');
+                document.getElementById('order-count').textContent = '0';
+                document.getElementById('grand-total').textContent = '₹0.00';
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                paginationBlock.classList.remove('hidden');
+            }
 
-            sortedOrderIds.forEach(orderId => {
-                const items = groupedOrders[orderId];
-                if (!items || items.length === 0) return; // Skip if order isn't in CSV
+            // Calculate pagination bounds
+            const totalItems = currentFilteredIds.length;
+            const totalPages = Math.ceil(totalItems / ordersPerPage) || 1;
+            
+            if (currentPage > totalPages) currentPage = totalPages;
 
-                // Calculate total for this specific order
+            const startIndex = (currentPage - 1) * ordersPerPage;
+            const endIndex = Math.min(startIndex + ordersPerPage, totalItems);
+            const paginatedIds = currentFilteredIds.slice(startIndex, endIndex);
+
+            // Calculate total values (for the entire filtered set, not just the page)
+            currentFilteredIds.forEach(id => {
+                const items = allGroupedOrders[id];
+                grandTotalValue += items.reduce((sum, item) => sum + parseFloat(item.sub_total || 0), 0);
+            });
+
+            document.getElementById('order-count').textContent = currentFilteredIds.length;
+            document.getElementById('grand-total').textContent = `₹${grandTotalValue.toFixed(2)}`;
+
+            // Update Pagination UI text
+            document.getElementById('page-start').textContent = startIndex + 1;
+            document.getElementById('page-end').textContent = endIndex;
+            document.getElementById('page-total').textContent = totalItems;
+            document.getElementById('page-indicator').textContent = `Page ${currentPage} of ${totalPages}`;
+
+            // Manage Button States
+            document.getElementById('btn-prev').disabled = currentPage === 1;
+            document.getElementById('btn-next').disabled = currentPage === totalPages;
+
+            // Render Cards for the current page
+            paginatedIds.forEach(orderId => {
+                const items = allGroupedOrders[orderId];
                 const orderTotal = items.reduce((sum, item) => sum + parseFloat(item.sub_total || 0), 0);
-                grandTotalValue += orderTotal;
 
-                // Build the table rows for the order items
                 let rowsHtml = '';
                 items.forEach((item, index) => {
-                    // Alternating row colors for better readability
                     const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50';
                     rowsHtml += `
                         <tr class="border-b border-slate-100 ${rowBg} hover:bg-blue-50 transition-colors">
@@ -113,13 +238,11 @@
                     `;
                 });
 
-                // Build the final card layout for the order
                 const cardHtml = `
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <!-- Card Header -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in">
                         <div class="bg-slate-800 px-6 py-5 flex justify-between items-center">
                             <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                                 </svg>
                                 Order #${orderId}
@@ -128,8 +251,6 @@
                                 ${items.length} Items
                             </span>
                         </div>
-                        
-                        <!-- Responsive Table -->
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse min-w-[600px]">
                                 <thead>
@@ -146,20 +267,14 @@
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <!-- Card Footer (Total) -->
                         <div class="bg-slate-50 px-6 py-5 flex justify-end items-center border-t border-slate-200">
                             <div class="text-slate-500 text-sm font-medium mr-4 uppercase tracking-wider">Order Total:</div>
                             <div class="text-2xl font-black text-slate-900">₹${orderTotal.toFixed(2)}</div>
                         </div>
                     </div>
                 `;
-
-                dashboard.innerHTML += cardHtml;
+                container.innerHTML += cardHtml;
             });
-            
-            // Update Grand Total Header
-            document.getElementById('grand-total').textContent = `₹${grandTotalValue.toFixed(2)}`;
         }
     </script>
 </body>
